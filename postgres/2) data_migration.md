@@ -1,0 +1,73 @@
+
+# 2️⃣ XML → PostgreSQL Migration
+# ------------------------------------
+
+## Create XML file: `students.xml`
+```
+  sudo nano students.xml
+```
+## Paste the below code and save it
+```xml
+<students>
+  <student id="1">
+    <name>Student 1</name>
+    <age>20</age>
+  </student>
+
+  <student id="2">
+    <name>Student 2</name>
+    <age>22</age>
+  </student>
+
+  <student id="3">
+    <name>Student 3</name>
+    <age>21</age>
+  </student>
+</students>
+```
+
+## Start PostgreSQL:
+
+```bash
+sudo -i -u postgres
+psql
+```
+
+## Create staging table
+
+```sql
+DROP TABLE IF EXISTS xml_raw;
+CREATE TABLE xml_raw(line TEXT);
+```
+
+Load XML file:
+
+```sql
+INSERT INTO xml_raw
+SELECT pg_read_file('/home/cloud_user/students.xml');
+```
+
+---
+
+## Parse XML → Insert into `students` table
+
+```sql
+WITH xml_doc AS (
+  SELECT xmlparse(document string_agg(line, E'\n' ORDER BY 1)) AS xm
+  FROM xml_raw
+)
+INSERT INTO school.students (id, name, age)
+SELECT
+  (x.id)::INT,
+  x.name,
+  (x.age)::INT
+FROM xml_doc d,
+LATERAL XMLTABLE(
+  '/students/student'
+  PASSING d.xm
+  COLUMNS
+    id    TEXT PATH '@id',
+    name  TEXT PATH 'name',
+    age   TEXT PATH 'age'
+) AS x;
+```
