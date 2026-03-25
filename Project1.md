@@ -62,4 +62,4 @@ with DAG(
         python_callable=conn_func
     )
 ```
-## Now you can execute the connections.py dag and view the resultant output in logs                                                                                              55,5          Bot
+## Now you can execute the connections.py dag and view the resultant output in logs
